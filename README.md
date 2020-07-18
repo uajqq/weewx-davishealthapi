@@ -10,8 +10,8 @@ Right now, the service records the following information from the Davis WeatherL
 
 - Signal Quality (in %)
 - Signal Strength (in dBm)
-- Supercapacitor voltage
-- Sensor unit Solar Cell
+- Supercapacitor voltage (the rechargable battery that powers the sensor)
+- Sensor Solar Cell voltage
 - Good Packets Streak
 - Transmitter ID
 - Transmitter Battery voltage
