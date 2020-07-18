@@ -8,28 +8,33 @@ def loader():
 class DavisHealthAPIInstaller(ExtensionInstaller):
     def __init__(self):
         super(DavisHealthAPIInstaller, self).__init__(
-            version="0.10",
+            version='0.10',
             name='davishealthapi',
             description='Collect and display station health information from the Davis WeatherLink API.',
-            author="uajqq",
-            author_email="",
+            author='uajqq',
+            author_email='',
             data_services='user.davishealthapi.DavisHealthAPI',
+            files=[('bin/user', ['bin/user/davishealthapi.py'])],
             config={
                 'davishealthapi': {
                     'data_binding': 'davishealthapi_binding',
                     'station_id': '',
                     'api-key': '',
-                    'api-secret': ''},
+                    'api-secret': ''
+                },
                 'DataBindings': {
                     'davishealthapi_binding': {
                         'database': 'davishealthapi_sqlite',
                         'table_name': 'archive',
                         'manager': 'weewx.manager.DaySummaryManager',
-                        'schema': 'user.davishealthapi.schema'}},
+                        'schema': 'user.davishealthapi.schema'
+                    }
+                },
                 'Databases': {
                     'davishealthapi_sqlite': {
                         'database_type': 'SQLite',
-                        'database_name': 'davishealthapi.sdb'}},
+                        'database_name': 'davishealthapi.sdb'}
+                    },
                 'StdReport': {
                     'Defaults': {
                         'Labels': {
@@ -61,13 +66,10 @@ class DavisHealthAPIInstaller(ExtensionInstaller):
                                 'espressIFVersion': 'EspressIF Version',
                                 'linkUptime': 'Link Uptime',
                                 'consolePower': 'Console AC Power',
-                                'txBytes': 'Data Transmitted'
+                                'txBytes': 'Data Transmitted',
                             }
-                        }}}},
-            files=[('bin/user',
-                    ['bin/user/davishealthapi.py']),
-                   ('skins/health',
-                    ['skins/health/skin.conf',
-                     'skins/health/index.html.tmpl']),
-                   ]
-            )
+                        }
+                    }
+                }
+            }
+        )

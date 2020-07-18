@@ -145,7 +145,7 @@ weewx.units.default_unit_label_dict['decibels']  = ' dBm'
 weewx.units.USUnits['group_millivolts'] = 'millivolts'
 weewx.units.MetricUnits['group_millivolts'] = 'millivolts'
 weewx.units.MetricWXUnits['group_millivolts'] = 'millivolts'
-weewx.units.default_unit_format_dict['millivolts'] = '%.1f'
+weewx.units.default_unit_format_dict['millivolts'] = '%d'
 weewx.units.default_unit_label_dict['millivolts']  = ' mV'
 
 
