@@ -67,7 +67,7 @@ If you want to display graphs on the `telemetry.html` page, add the following to
 Do the same under `[[week_images]]`, `[[month_images]]`, etc. but change `[[[dayrx]]]` to `[[[weekrx]]]`, `[[[monthrx]]]`, and so on. That tells the generator to make the graphs, but you still have to display them. For that, you can replace `telemetry.html.tmpl` in the `skins/Seasons` folder with the file from the download, `telemetry.html.tmpl.EXAMPLE`. Make sure you rename the example file to match the file you're trying to replace!
 
 ### Belchertown skin
-If you're using the excellent Belchertown skin to display your weather data, you can easily add graphs to `graphs.conf` like so:
+If you're using the excellent [Belchertown skin](https://github.com/poblabs/weewx-belchertown) to display your weather data, you can easily add graphs to `graphs.conf` like so:
 
 ```
 [[signalChart]]
