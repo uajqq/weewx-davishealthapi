@@ -8,7 +8,8 @@ The data are stored in their own database, since most of the fields don't exist 
 ## Data
 Right now, the service records the following information from the Davis WeatherLink API:
 
-- Signal Quality
+- Signal Quality (in %)
+- Signal Strength (in dBm)
 - Supercapacitor voltage
 - Sensor unit Solar Cell
 - Good Packets Streak
@@ -19,7 +20,6 @@ Right now, the service records the following information from the Davis WeatherL
 - Transmitter Battery Status (OK or LOW)
 - Error Packets
 - AFC
-- Signal Strength (in dBm)
 - Number of re-synchronizations
 - UV Sensor Solar Cell voltage
 - Console Battery voltage
