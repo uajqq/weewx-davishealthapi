@@ -98,16 +98,30 @@ If you want to display graphs on the `telemetry.html` page, add the following to
 
 Do the same under `[[week_images]]`, `[[month_images]]`, etc. but change `[[[dayrx]]]` to `[[[weekrx]]]`, `[[[monthrx]]]`, and so on. That tells the generator to make the graphs, but you still have to display them. For that, you can replace `telemetry.html.tmpl` in the `skins/Seasons` folder with the file from the download, `telemetry.html.tmpl.EXAMPLE`. Make sure you rename the example file to match the file you're trying to replace!
 
+This should give you a result like this:
+
+![image](https://user-images.githubusercontent.com/46248396/87861986-6b502000-c919-11ea-851d-55e69c712cce.png)
+
+Note how the solar cell drops to zero as the sun goes down, the supercapacitor slowly discharges throughout the night, and the solar cell recharges it in the morning. It didn't get to zero so the sensor battery voltage remains untouched!
+
 ### Belchertown skin
 If you're using the excellent [Belchertown skin](https://github.com/poblabs/weewx-belchertown) to display your weather data, you can easily add graphs to `graphs.conf` like so:
 
 ```
-[[signalChart]]
-        title = Signal Strength 
+[[voltChart]]
+        title = Voltages
         type = spline
-        connectNulls = true
-        data_binding = davishealthapi_binding  
-        [[[signalQuality]]]     
+        connectNulls = True
+        data_binding = davishealthapi_binding
+        [[[supercapVolt]]]
+        [[[solarVolt]]]
+        [[[txBattery]]] 
 ```
+
+This yields a graph that looks like this:
+
+![Screen Shot 2020-07-18 at 5 13 28 PM](https://user-images.githubusercontent.com/46248396/87862076-15c84300-c91a-11ea-85ee-a5bb1a237555.png)
+
+
 
 *In all cases, note that you have to specify the database binding as `davishealthapi_binding` whenever you are referencing the DavisHealthAPI data!!* Take a look at the example files to see how that's been done so you can adapt it for your own purposes.
