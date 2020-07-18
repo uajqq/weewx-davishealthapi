@@ -120,8 +120,7 @@ If you're using the excellent [Belchertown skin](https://github.com/poblabs/weew
 
 This yields a graph that looks like this:
 
-![Screen Shot 2020-07-18 at 5 13 28 PM](https://user-images.githubusercontent.com/46248396/87862076-15c84300-c91a-11ea-85ee-a5bb1a237555.png)
-
+![Screen Shot 2020-07-18 at 5 21 57 PM](https://user-images.githubusercontent.com/46248396/87862923-4791d780-c923-11ea-86cf-5a0abecaeba9.png)
 
 
 *In all cases, note that you have to specify the database binding as `davishealthapi_binding` whenever you are referencing the DavisHealthAPI data!!* Take a look at the example files to see how that's been done so you can adapt it for your own purposes.
