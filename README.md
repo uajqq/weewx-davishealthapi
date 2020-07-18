@@ -5,6 +5,38 @@ The code makes two API calls per archive period: one to the "current" v2 API, wh
 
 The data are stored in their own database, since most of the fields don't exist within the default weewx database. The code is patterned after the [cmon driver for weewx by Matthew Hall](https://github.com/uajqq/weewx-weatherlinkliveudp).
 
+## Data
+Right now, the service records the following information from the Davis WeatherLink API:
+
+- Signal Quality
+- Supercapacitor voltage
+- Sensor unit Solar Cell
+- Good Packets Streak
+- Transmitter ID
+- Transmitter Battery voltage
+- Rain Bucket Tips
+- Solar Radiation Sensor Solar Cell voltage
+- Transmitter Battery Status (OK or LOW)
+- Error Packets
+- AFC
+- Signal Strength (in dBm)
+- Number of re-synchronizations
+- UV Sensor Solar Cell voltage
+- Console Battery voltage
+- Rapid Records
+- Firmware Version
+- Uptime
+- Touchpad Wakeups
+- Bootloader Version
+- Local API Queries
+- Data Received (in bytes)
+- Davis Health Version
+- Radio Version
+- EspressIF Version
+- Link Uptime
+- Console AC Power voltage
+- Data Transmitted (in bytes)
+
 ## Installation
 Download the repository:
 
