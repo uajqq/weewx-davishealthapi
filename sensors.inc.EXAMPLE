@@ -1,0 +1,115 @@
+## sensors module for weewx skins
+## Copyright Tom Keffer, Matthew Wall
+## See LICENSE.txt for your rights
+
+## Modified to work with the DavisHealthAPI extension to display device info
+
+#errorCatcher Echo
+#encoding UTF-8
+
+## this is a conditional display of sensor data, including connectivity,
+## battery status, and various voltages.  if there are no data available,
+## then this degenerates to nothing displayed.
+
+#def get_battery_status($x)
+#if $x == 0
+<span class="status_ok">OK</span>
+#else
+<span class="status_low">LOW</span>
+#end if
+#end def
+
+<div id='sensors_widget' class="widget">
+  <div class="widget_title">
+    <a href="telemetry.html">Sensor Status</a>
+    <a class="widget_control"
+      onclick="toggle_widget('sensors')">&diams;</a>
+  </div>
+  <div class="widget_contents">
+  <table>
+
+    <tr><th>Connectivity</th><th></th></tr>
+    <tr>
+      <td class="label">$obs.label.rxCheckPercent</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').signalQuality</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.rssi</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').rssi</td>
+    </tr>
+
+    <tr><th>Power Status</th><th></th></tr>
+    <tr>
+      <td class="label">$obs.label.supercapVolt</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').supercapVolt</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.solarVolt</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').solarVolt</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.txBattery</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').txBattery</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.txBatteryFlag</td>
+      <td class="data">$get_battery_status($current($max_delta=3600,$data_binding='davishealthapi_binding').txBatteryFlag.raw)</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.consoleBattery</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').consoleBattery</td>
+    </tr>
+
+    <tr><th>Data Transmission</th><th></th></tr>
+    <tr>
+      <td class="label">$obs.label.packetStreak</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').packetStreak</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.errorPackets</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').errorPackets</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.resynchs</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').resynchs</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.rxBytes</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').rxBytes</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.txBytes</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').txBytes</td>
+    </tr>
+
+    <tr><th>Data Information</th><th></th></tr>
+    <tr>
+      <td class="label">$obs.label.uptime</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').uptime</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.linkUptime</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').linkUptime</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.firmwareVersion</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').firmwareVersion</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.bootloaderVersion</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').bootloaderVersion</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.healthVersion</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').healthVersion</td>
+    </tr>
+    <tr>
+      <td class="label">$obs.label.radioVersion</td>
+      <td class="data">$current($max_delta=3600,$data_binding='davishealthapi_binding').radioVersion</td>
+    </tr>
+
+
+  </table>
+  </div>
+
+</div>
