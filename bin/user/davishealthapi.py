@@ -4,38 +4,6 @@ the v2 API.
 
 Adapted from the cmon driver by Matthew Hall
 
-Schema
-
-The default schema is defined in this file.  If you prefer to maintain a schema
-different than the default, specify the desired schema in the configuration.
-
-[DataBindings]
-    [[davishealthapi_binding]]
-        database = davishealthapi_sqlite
-        manager = weewx.manager.DaySummaryManager
-        table_name = archive
-        [[[schema]]]
-            dateTime = INTEGER NOT NULL PRIMARY KEY
-            usUnits = INTEGER NOT NULL
-            ...etc
-
-Another approach to maintaining a custom schema is to define the schema in the
-file user/extensions.py as davishealthapiSchema:
-
-davishealthapiSchema = [
-    ('dateTime', 'INTEGER NOT NULL PRIMARY KEY'),
-    ('usUnits', 'INTEGER NOT NULL'),
-    ...etc
-    ]
-
-then load it using this configuration:
-
-[DataBindings]
-    [[davishealthapi_binding]]
-        database = davishealthapi_sqlite
-        manager = weewx.manager.DaySummaryManager
-        table_name = archive
-        schema = user.extensions.davishealthapiSchema
 '''
 
 from __future__ import with_statement
@@ -177,7 +145,7 @@ schema = [
 def get_historical_url(parameters, api_secret):
     '''Construct a valid v2 historical API URL'''
 
-    loginf('Getting URL (historical)')
+    logdbg('Getting URL (historical)')
     # Get historical API data
     # Now concatenate all parameters into a string
     urltext = ''
@@ -198,13 +166,13 @@ def get_historical_url(parameters, api_secret):
          parameters['start-timestamp'], parameters['end-timestamp'],
          api_signature, parameters['t'])
     )
-    loginf('URL should be: %s' % apiurl)
+    logdbg('URL should be: %s' % apiurl)
     return apiurl
 
 def get_current_url(parameters, api_secret):
     '''Construct a valid v2 current API URL'''
 
-    loginf('Getting URL (current')
+    logdbg('Getting URL (current')
     parameters.pop('start-timestamp', None)
     parameters.pop('end-timestamp', None)
     urltext = ''
@@ -220,7 +188,7 @@ def get_current_url(parameters, api_secret):
         '&api-signature=%s&t=%s' %
         (parameters['station-id'], parameters['api-key'],
          api_signature, parameters['t']))
-    loginf('URL should be: %s' % apiurl)
+    logdbg('URL should be: %s' % apiurl)
     return apiurl
 
 
@@ -251,7 +219,7 @@ def decode_historical_json(data):
                         historical_data[i]['data_structure_type'] == 13
                     )
             ):
-                loginf('Found historical data from data ID %s' % i)
+                logdbg('Found historical data from data ID %s' % i)
                 values = historical_data[i]['data'][0]
 
                 h_packet['rxCheckPercent'] = values.get('reception')
@@ -297,7 +265,7 @@ def decode_current_json(data):
                     and
                     current_data[i]['data_structure_type'] == 15
             ):
-                loginf('Found current data from data ID %s' % i)
+                logdbg('Found current data from data ID %s' % i)
                 values = current_data[i]['data'][0]
 
                 c_packet['consoleBattery'] = values.get('battery_voltage')
@@ -344,7 +312,7 @@ class DavisHealthAPI(StdService):
         self.api_key = options.get('api_key', None)
         self.api_secret = options.get('api_secret', None)
         self.station_id = options.get('station_id', None)
-        loginf('Collected config options are: %s %s %s' % (
+        logdbg('Collected config options are: %s %s %s' % (
             self.api_key, self.api_secret, self.station_id))
 
         # get the database parameters we need to function
@@ -367,7 +335,7 @@ class DavisHealthAPI(StdService):
     @staticmethod
     def get_data(api_key, api_secret, station_id, polling_interval):
         '''Make an API call and process the data'''
-        loginf('Getting data now')
+        logdbg('Getting data now')
         packet = dict()
         packet['dateTime'] = int(time.time())
         packet['usUnits'] = weewx.US
@@ -392,16 +360,16 @@ class DavisHealthAPI(StdService):
         }
         parameters = collections.OrderedDict(sorted(parameters.items()))
         for key in parameters:
-            loginf('Key %s is %s' % (key, parameters[key]))
+            logdbg('Key %s is %s' % (key, parameters[key]))
 
         url = get_historical_url(parameters, api_secret)
-        loginf('Historical data URL is %s' % url)
+        logdbg('Historical data URL is %s' % url)
         data = get_json(url)
         h_packet = decode_historical_json(data)
 
 
         url = get_current_url(parameters, api_secret)
-        loginf('Current data url is %s' % url)
+        logdbg('Current data url is %s' % url)
         data = get_json(url)
         c_packet = decode_current_json(data)
 
@@ -420,7 +388,7 @@ class DavisHealthAPI(StdService):
         '''save data to database then prune old records as needed'''
         now = int(time.time() + 0.5)
         delta = now - event.record['dateTime']
-        loginf('Now: %s Delta: %s' % (now, delta))
+        logdbg('Now: %s Delta: %s' % (now, delta))
         self.last_ts = event.record['dateTime']
         if delta > event.record['interval'] * 60:
             logdbg('Skipping record: time difference %s too big' % delta)
@@ -451,5 +419,5 @@ class DavisHealthAPI(StdService):
                                self.station_id, self.polling_interval)
         # calculate the interval (an integer), and be sure it is non-zero
         record['interval'] = max(1, int((now_ts - last_ts) / 60))
-        loginf('davishealthapi packet: %s' % record)
+        logdbg('davishealthapi packet: %s' % record)
         return record
