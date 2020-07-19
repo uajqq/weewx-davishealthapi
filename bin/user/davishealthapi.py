@@ -10,7 +10,6 @@ from __future__ import with_statement
 from __future__ import absolute_import
 from __future__ import print_function
 import time
-import collections
 import hashlib
 import hmac
 import requests
@@ -167,9 +166,11 @@ def get_historical_url(parameters, api_secret):
     )
     return apiurl
 
+
 def get_current_url(parameters, api_secret):
     '''Construct a valid v2 current API URL'''
 
+    # Remove parameters the current API does not require
     parameters.pop('start-timestamp', None)
     parameters.pop('end-timestamp', None)
     urltext = ''
@@ -184,7 +185,8 @@ def get_current_url(parameters, api_secret):
         'https://api.weatherlink.com/v2/current/%s?api-key=%s'
         '&api-signature=%s&t=%s' %
         (parameters['station-id'], parameters['api-key'],
-         api_signature, parameters['t']))
+         api_signature, parameters['t'])
+    )
     return apiurl
 
 
@@ -245,7 +247,6 @@ def decode_historical_json(data):
             'No valid historical data structure types found in API data. '
             'Error is: %s' % error
         )
-
     return h_packet
 
 
@@ -290,7 +291,6 @@ def decode_current_json(data):
             'No valid current data structure types found in API data. '
             'Error is: %s' % error
         )
-
     return c_packet
 
 
@@ -326,6 +326,7 @@ class DavisHealthAPI(StdService):
         self.last_ts = None
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
+
     @staticmethod
     def get_data(api_key, api_secret, station_id, polling_interval):
         '''Make an API call and process the data'''
@@ -346,12 +347,11 @@ class DavisHealthAPI(StdService):
         # alphabetical order before the signature is calculated
         parameters = {
             'api-key': api_key,
+            'end-timestamp': int(time.time()),
+            'start-timestamp': int(time.time()-polling_interval),
             'station-id': station_id,
             't': int(time.time()),
-            'start-timestamp': int(time.time()-polling_interval),
-            'end-timestamp': int(time.time())
         }
-        parameters = collections.OrderedDict(sorted(parameters.items()))
 
         url = get_historical_url(parameters, api_secret)
         logdbg('Historical data url is %s' % url)
@@ -369,11 +369,13 @@ class DavisHealthAPI(StdService):
 
         return packet
 
+
     def shutDown(self):
         try:
             self.dbm.close()
         except Exception as error:
             logerr('Database exception: %s' % error)
+
 
     def new_archive_record(self, event):
         '''save data to database then prune old records as needed'''
@@ -389,9 +391,11 @@ class DavisHealthAPI(StdService):
         if self.max_age is not None:
             self.prune_data(now - self.max_age)
 
+
     def save_data(self, record):
         '''save data to database'''
         self.dbm.addRecord(record)
+
 
     def prune_data(self, timestamp):
         '''delete records with dateTime older than ts'''
@@ -402,6 +406,7 @@ class DavisHealthAPI(StdService):
             self.dbm.getSql('vacuum')
         except Exception as error:
             logerr('Prune data error: %s' % error)
+
 
     def get_packet(self, now_ts, last_ts):
         '''Retrieves and assembles the final packet'''
