@@ -1,7 +1,7 @@
 # weewx-davishealthapi
-Driver/service that pulls device health information from a Davis Instruments weather sensor and displays it using weewx. I made this extension for users like me who have a WeatherLink Live device, which unfortunately gives very little sensor health data over the local API. 
+Driver/service that pulls device health (telemetry) information from a Davis Instruments weather sensor and displays it using weewx. I made this extension for users like me who have a WeatherLink Live device, which unfortunately provides no sensor health data over the local API. 
 
-The code makes two API calls per archive period: one to the "current" v2 API, which contains values like the console battery status and firmware version, and another to the "historical" v2 API, which contains most of the sensor's health information like signal strength, signal quality, solar cell voltage, and so on.
+The code makes two API calls per archive period: one to the "current" v2 API, which contains values like the console battery status and firmware version, and another to the "historical" v2 API, which contains most of the sensor's health telemetry like signal strength, signal quality, solar cell voltage, and so on.
 
 The data are stored in their own database, since most of the fields don't exist within the default weewx database. The code is patterned after the [cmon driver for weewx by Matthew Hall](https://github.com/uajqq/weewx-weatherlinkliveudp).
 
@@ -123,4 +123,4 @@ This yields a graph that looks like this:
 ![Screen Shot 2020-07-18 at 5 21 57 PM](https://user-images.githubusercontent.com/46248396/87862923-4791d780-c923-11ea-86cf-5a0abecaeba9.png)
 
 
-*In all cases, note that you have to specify the database binding as `davishealthapi_binding` whenever you are referencing the DavisHealthAPI data!!* Take a look at the example files to see how that's been done so you can adapt it for your own purposes.
+***In all cases, note that you have to specify the database binding as `davishealthapi_binding` whenever you are referencing the DavisHealthAPI data!!*** Take a look at the example files to see how that's been done so you can adapt it for your own purposes.
