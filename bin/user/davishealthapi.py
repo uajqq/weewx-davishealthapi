@@ -4,51 +4,6 @@ the v2 API.
 
 Adapted from the cmon driver by Matthew Hall
 
-This file contains both a weewx driver and a weewx service.
-
-Installation
-
-Put this file in the bin/user directory.
-
-
-Service Configuration
-
-Add the following to weewx.conf:
-
-[davishealthapi]
-    data_binding = davishealthapi_binding
-    max_age = 2592000 # 30 days; None to store indefinitely
-
-[DataBindings]
-    [[davishealthapi_binding]]
-        database = davishealthapi_sqlite
-        manager = weewx.manager.DaySummaryManager
-        table_name = archive
-        schema = user.davishealthapi.schema
-
-[Databases]
-    [[davishealthapi_sqlite]]
-        root = %(WEEWX_ROOT)s
-        database_name = archive/davishealthapi.sdb
-        driver = weedb.sqlite
-
-[Engine]
-    [[Services]]
-        archive_services = ..., user.davishealthapi
-
-
-Driver Configuration
-
-Add the following to weewx.conf:
-
-[Station]
-    station_type = davishealthapi
-
-[davishealthapi]
-    polling_interval = 60
-    driver = user.davishealthapi
-
-
 Schema
 
 The default schema is defined in this file.  If you prefer to maintain a schema
@@ -93,10 +48,10 @@ import hmac
 import requests
 
 import weewx
-import weeutil.weeutil
-from weewx.drivers import AbstractDevice
-from weewx.engine import StdService
 import weewx.units
+from weewx.engine import StdService
+
+import weeutil.weeutil
 
 try:
     # Test for new-style weewx logging by trying to import weeutil.logger
@@ -105,12 +60,15 @@ try:
     log = logging.getLogger(__name__)
 
     def logdbg(msg):
+        '''Log debug messages'''
         log.debug(msg)
 
     def loginf(msg):
+        '''Log info messages'''
         log.info(msg)
 
     def logerr(msg):
+        '''Log error messages'''
         log.error(msg)
 
 except ImportError:
@@ -118,15 +76,19 @@ except ImportError:
     import syslog
 
     def logmsg(level, msg):
+        '''Log messages'''
         syslog.syslog(level, 'davishealthapi: %s:' % msg)
 
     def logdbg(msg):
+        '''Log debug messages'''
         logmsg(syslog.LOG_DEBUG, msg)
 
     def loginf(msg):
+        '''Log info messages'''
         logmsg(syslog.LOG_INFO, msg)
 
     def logerr(msg):
+        '''Log error messages'''
         logmsg(syslog.LOG_ERR, msg)
 
 DRIVER_NAME = 'DavisHealthAPI'
@@ -211,186 +173,161 @@ schema = [
     ('txBytes', 'INTEGER'), #bytes
     ]
 
-class GetAPIData:
-    '''Assemble API URLs and makes the calls'''
-    def get_data(station_id, api_key, api_secret, poll_interval):
-        historical_response = None
-        current_response = None
-        packet = dict()
-        packet['dateTime'] = int(time.time())
-        packet['usUnits'] = weewx.US
 
-        if not api_key or not station_id or not api_secret:
-            logerr(
-                'DavisHealthAPI is missing a required parameter. '
-                'Double-check your configuration file. key: %s'
-                'secret: %s station ID: %s' %
-                (api_key, api_secret, station_id)
-            )
-            return packet
+def get_historical_url(parameters, api_secret):
+    '''Construct a valid v2 historical API URL'''
 
-        # Get historical API data
-        # WL API expects all of the components of the API call to be in
-        # alphabetical order before the signature is calculated
-        parameters = {
-            'api-key': api_key,
-            'station-id': station_id,
-            't': int(time.time()),
-            'start-timestamp': int(time.time()-poll_interval),
-            'end-timestamp': int(time.time())
-        }
-        parameters = collections.OrderedDict(sorted(parameters.items()))
-        for key in parameters:
-            loginf('health: %s is %s' % (key, parameters[key]))
-        # Now concatenate all parameters into a string
-        urltext = ''
-        for key in parameters:
-            urltext = urltext + key + str(parameters[key])
-        # Now calculate the API signature using the API secret
-        api_signature = hmac.new(
-            api_secret.encode('utf-8'),
-            urltext.encode('utf-8'),
-            hashlib.sha256
-        ).hexdigest()
-        # Finally assemble the URL
-        apiurl = (
-            'https://api.weatherlink.com/v2/historic/%s?api-key=%s'
-            '&start-timestamp=%s&end-timestamp=%s&api-signature=%s'
-            '&t=%s' %
-            (parameters['station-id'], parameters['api-key'],
-             parameters['start-timestamp'], parameters['end-timestamp'],
-             api_signature, parameters['t'])
+    loginf('Getting URL (historical)')
+    # Get historical API data
+    # Now concatenate all parameters into a string
+    urltext = ''
+    for key in parameters:
+        urltext = urltext + key + str(parameters[key])
+    # Now calculate the API signature using the API secret
+    api_signature = hmac.new(
+        api_secret.encode('utf-8'),
+        urltext.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+    # Finally assemble the URL
+    apiurl = (
+        'https://api.weatherlink.com/v2/historic/%s?api-key=%s'
+        '&start-timestamp=%s&end-timestamp=%s&api-signature=%s'
+        '&t=%s' %
+        (parameters['station-id'], parameters['api-key'],
+         parameters['start-timestamp'], parameters['end-timestamp'],
+         api_signature, parameters['t'])
+    )
+    loginf('URL should be: %s' % apiurl)
+    return apiurl
+
+def get_current_url(parameters, api_secret):
+    '''Construct a valid v2 current API URL'''
+
+    loginf('Getting URL (current')
+    parameters.pop('start-timestamp', None)
+    parameters.pop('end-timestamp', None)
+    urltext = ''
+    for key in parameters:
+        urltext = urltext + key + str(parameters[key])
+    api_signature = hmac.new(
+        api_secret.encode('utf-8'),
+        urltext.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+    apiurl = (
+        'https://api.weatherlink.com/v2/current/%s?api-key=%s'
+        '&api-signature=%s&t=%s' %
+        (parameters['station-id'], parameters['api-key'],
+         api_signature, parameters['t']))
+    loginf('URL should be: %s' % apiurl)
+    return apiurl
+
+
+def get_json(url):
+    '''Retrieve JSON data from the API'''
+
+    try:
+        response = requests.get(url)
+    except requests.Timeout as error:
+        logerr('Message: %s' % error)
+    except requests.RequestException as error:
+        logerr('RequestException: %s' % error)
+
+    return response.json()
+
+
+def decode_historical_json(data):
+    '''Read the historical API JSON data'''
+
+    h_packet = dict()
+    try:
+        historical_data = data['sensors']
+        for i in range(7):
+            if (
+                    historical_data[i]['data'] and (
+                        historical_data[i]['data_structure_type'] == 11
+                        or
+                        historical_data[i]['data_structure_type'] == 13
+                    )
+            ):
+                loginf('Found historical data from data ID %s' % i)
+                values = historical_data[i]['data'][0]
+
+                h_packet['rxCheckPercent'] = values.get('reception')
+                h_packet['rssi'] = values.get('rssi')
+                h_packet['supercapVolt'] = values.get('supercap_volt_last')
+                h_packet['solarVolt'] = values.get('solar_volt_last')
+                h_packet['packetStreak'] = values.get('good_packets_streak')
+                h_packet['txID'] = values.get('tx_id')
+                h_packet['txBattery'] = values.get('trans_battery')
+                h_packet['rainfallClicks'] = values.get('rainfall_clicks')
+                h_packet['solarRadVolt'] = values.get('solar_rad_volt_last')
+                h_packet['txBatteryFlag'] = values.get('trans_battery_flag')
+                h_packet['signalQuality'] = values.get('reception')
+                h_packet['errorPackets'] = values.get('error_packets')
+                h_packet['afc'] = values.get('afc')
+                h_packet['resynchs'] = values.get('resynchs')
+                h_packet['uvVolt'] = values.get('uv_volt_last')
+
+                break
+    except KeyError as error:
+        logerr(
+            'No valid historical  API data recieved. Double-check API '
+            'key/secret and station id. Error is: %s' % error
         )
-        # Make the API call and collect JSON
-        try:
-            historical_response = requests.get(apiurl).json()
-        except requests.Timeout as error:
-            logerr('Message: %s' % error)
-        except requests.RequestException as error:
-            logerr('RequestException: %s' % error)
+    except IndexError as error:
+        logerr(
+            'No valid historical data structure types found in API data. '
+            'Error is: %s' % error
+        )
 
-        # Get current API data using same procedure as above
-        parameters = {
-            'api-key': api_key,
-            'station-id': station_id,
-            't': int(time.time())
-        }
-        parameters = collections.OrderedDict(sorted(parameters.items()))
-        urltext = ''
-        for key in parameters:
-            urltext = urltext + key + str(parameters[key])
-        api_signature = hmac.new(
-            api_secret.encode('utf-8'),
-            urltext.encode('utf-8'),
-            hashlib.sha256
-        ).hexdigest()
-        apiurl = (
-            'https://api.weatherlink.com/v2/current/%s?api-key=%s'
-            '&api-signature=%s&t=%s' %
-            (parameters['station-id'], parameters['api-key'],
-             api_signature, parameters['t']))
-        try:
-            current_response = requests.get(apiurl).json()
-        except requests.Timeout as error:
-            logerr('Message: %s' % error)
-        except requests.RequestException as error:
-            logerr('RequestException: %s' % error)
+    return h_packet
 
-        try:
-            historical_data = historical_response['sensors']
-            for i in range(7):
-                if (
-                        historical_data[i]['data'] and (
-                            historical_data[i]['data_structure_type'] == 11
-                            or
-                            historical_data[i]['data_structure_type'] == 13
-                        )
-                ):
-                    loginf('Found historical data from data ID %s' % i)
-                    values = historical_data[i]['data'][0]
 
-                    packet['rxCheckPercent'] = values.get('reception')
-                    packet['rssi'] = values.get('rssi')
-                    packet['supercapVolt'] = values.get('supercap_volt_last')
-                    packet['solarVolt'] = values.get('solar_volt_last')
-                    packet['packetStreak'] = values.get('good_packets_streak')
-                    packet['txID'] = values.get('tx_id')
-                    packet['txBattery'] = values.get('trans_battery')
-                    packet['rainfallClicks'] = values.get('rainfall_clicks')
-                    packet['solarRadVolt'] = values.get('solar_rad_volt_last')
-                    packet['txBatteryFlag'] = values.get('trans_battery_flag')
-                    packet['signalQuality'] = values.get('reception')
-                    packet['errorPackets'] = values.get('error_packets')
-                    packet['afc'] = values.get('afc')
-                    packet['resynchs'] = values.get('resynchs')
-                    packet['uvVolt'] = values.get('uv_volt_last')
+def decode_current_json(data):
+    '''Read the current API JSON data'''
 
-                    break
-            current_data = current_response['sensors']
-            for i in range(7):
-                if (
-                        current_data[i]['data']
-                        and
-                        current_data[i]['data_structure_type'] == 15
-                ):
-                    loginf('Found current data from data ID %s' % i)
-                    values = current_data[i]['data'][0]
+    c_packet = dict()
+    try:
+        current_data = data['sensors']
+        for i in range(7):
+            if (
+                    current_data[i]['data']
+                    and
+                    current_data[i]['data_structure_type'] == 15
+            ):
+                loginf('Found current data from data ID %s' % i)
+                values = current_data[i]['data'][0]
 
-                    packet['consoleBattery'] = values.get('battery_voltage')
-                    packet['rapidRecords'] = values.get('rapid_records_sent')
-                    packet['firmwareVersion'] = values.get('firmware_version')
-                    packet['uptime'] = values.get('uptime')
-                    packet['touchpadWakeups'] = values.get('touchpad_wakeups')
-                    packet['bootloaderVersion'] = values.get('bootloader_version')
-                    packet['localAPIQueries'] = values.get('local_api_queries')
-                    packet['rxBytes'] = values.get('rx_bytes')
-                    packet['healthVersion'] = values.get('health_version')
-                    packet['radioVersion'] = values.get('radio_version')
-                    packet['espressIFVersion'] = values.get('espressif_version')
-                    packet['linkUptime'] = values.get('link_uptime')
-                    packet['consolePower'] = values.get('input_voltage')
-                    packet['txBytes'] = values.get('tx_bytes')
+                c_packet['consoleBattery'] = values.get('battery_voltage')
+                c_packet['rapidRecords'] = values.get('rapid_records_sent')
+                c_packet['firmwareVersion'] = values.get('firmware_version')
+                c_packet['uptime'] = values.get('uptime')
+                c_packet['touchpadWakeups'] = values.get('touchpad_wakeups')
+                c_packet['bootloaderVersion'] = values.get('bootloader_version')
+                c_packet['localAPIQueries'] = values.get('local_api_queries')
+                c_packet['rxBytes'] = values.get('rx_bytes')
+                c_packet['healthVersion'] = values.get('health_version')
+                c_packet['radioVersion'] = values.get('radio_version')
+                c_packet['espressIFVersion'] = values.get('espressif_version')
+                c_packet['linkUptime'] = values.get('link_uptime')
+                c_packet['consolePower'] = values.get('input_voltage')
+                c_packet['txBytes'] = values.get('tx_bytes')
 
-                    break
-        except KeyError as error:
-            logerr(
-                'No valid API data recieved. Double-check API '
-                'key/secret and station id. Error is: %s' % error
-            )
-        except IndexError as error:
-            logerr(
-                'No valid data structure types found in API data. '
-                'Error is: %s' % error
-            )
-        finally:
-            return packet
+                break
+    except KeyError as error:
+        logerr(
+            'No valid current API data recieved. Double-check API '
+            'key/secret and station id. Error is: %s' % error
+        )
+    except IndexError as error:
+        logerr(
+            'No valid current data structure types found in API data. '
+            'Error is: %s' % error
+        )
 
-def loader(config_dict, engine):
-    return DavisHealthAPIDriver(**config_dict['DavisHealthAPI'])
-
-class DavisHealthAPIDriver(AbstractDevice):
-    '''Driver for collecting computer health data.'''
-
-    def __init__(self, **stn_dict):
-        loginf('driver version is %s' % DRIVER_VERSION)
-        self.polling_interval = int(stn_dict.get('polling_interval', 60))
-        loginf('polling interval is %s' % self.polling_interval)
-        self.api_key = stn_dict.get('api_key', None)
-        self.api_secret = stn_dict.get('api_secret', None)
-        self.station_id = stn_dict.get('station_id', None)
-
-    @property
-    def hardware_name(self):
-        return 'DavisHealthAPI'
-
-    def genLoopPackets(self):
-        while True:
-            packet = (
-                GetAPIData.get_data(self.station_id, self.api_key,
-                                    self.api_secret, self.polling_interval)
-            )
-            yield packet
-            time.sleep(self.polling_interval)
+    return c_packet
 
 
 class DavisHealthAPI(StdService):
@@ -398,9 +335,9 @@ class DavisHealthAPI(StdService):
 
     def __init__(self, engine, config_dict):
         super(DavisHealthAPI, self).__init__(engine, config_dict)
-        self.archive_interval = 360 #FIX THIS
+        self.polling_interval = 360 # FIX THIS
         loginf('service version is %s' % DRIVER_VERSION)
-        loginf('archive interval is %s' % self.archive_interval)
+        loginf('archive interval is %s' % self.polling_interval)
 
         options = config_dict.get('davishealthapi', {})
         self.max_age = weeutil.weeutil.to_int(options.get('max_age', 2592000))
@@ -427,11 +364,57 @@ class DavisHealthAPI(StdService):
         self.last_ts = None
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
+    @staticmethod
+    def get_data(api_key, api_secret, station_id, polling_interval):
+        '''Make an API call and process the data'''
+        loginf('Getting data now')
+        packet = dict()
+        packet['dateTime'] = int(time.time())
+        packet['usUnits'] = weewx.US
+
+        if not api_key or not station_id or not api_secret:
+            logerr(
+                'DavisHealthAPI is missing a required parameter. '
+                'Double-check your configuration file. key: %s'
+                'secret: %s station ID: %s' %
+                (api_key, api_secret, station_id)
+            )
+            return packet
+
+        # WL API expects all of the components of the API call to be in
+        # alphabetical order before the signature is calculated
+        parameters = {
+            'api-key': api_key,
+            'station-id': station_id,
+            't': int(time.time()),
+            'start-timestamp': int(time.time()-polling_interval),
+            'end-timestamp': int(time.time())
+        }
+        parameters = collections.OrderedDict(sorted(parameters.items()))
+        for key in parameters:
+            loginf('Key %s is %s' % (key, parameters[key]))
+
+        url = get_historical_url(parameters, api_secret)
+        loginf('Historical data URL is %s' % url)
+        data = get_json(url)
+        h_packet = decode_historical_json(data)
+
+
+        url = get_current_url(parameters, api_secret)
+        loginf('Current data url is %s' % url)
+        data = get_json(url)
+        c_packet = decode_current_json(data)
+
+        packet.update(h_packet)
+        packet.update(c_packet)
+
+        return packet
+
     def shutDown(self):
         try:
             self.dbm.close()
-        except:
-            pass
+        except Exception as error:
+            logerr('Database exception: %s' % error)
 
     def new_archive_record(self, event):
         '''save data to database then prune old records as needed'''
@@ -443,7 +426,7 @@ class DavisHealthAPI(StdService):
             logdbg('Skipping record: time difference %s too big' % delta)
             return
         if self.last_ts is not None:
-            self.save_data(self.get_data(now, self.last_ts))
+            self.save_data(self.get_packet(now, self.last_ts))
         self.last_ts = now
         if self.max_age is not None:
             self.prune_data(now - self.max_age)
@@ -452,21 +435,20 @@ class DavisHealthAPI(StdService):
         '''save data to database'''
         self.dbm.addRecord(record)
 
-    def prune_data(self, ts):
+    def prune_data(self, timestamp):
         '''delete records with dateTime older than ts'''
-        sql = 'delete from %s where dateTime < %d' % (self.dbm.table_name, ts)
+        sql = 'delete from %s where dateTime < %d' % (self.dbm.table_name, timestamp)
         self.dbm.getSql(sql)
         try:
             # sqlite databases need some help to stay small
             self.dbm.getSql('vacuum')
-        except Exception:
-            pass
+        except Exception as error:
+            logerr('Prune data error: %s' % error)
 
-    def get_data(self, now_ts, last_ts):
-        record = (
-            GetAPIData.get_data(self.station_id, self.api_key,
-                                self.api_secret, self.archive_interval)
-        )
+    def get_packet(self, now_ts, last_ts):
+        '''Retrieves and assembles the final packet'''
+        record = self.get_data(self.api_key, self.api_secret,
+                               self.station_id, self.polling_interval)
         # calculate the interval (an integer), and be sure it is non-zero
         record['interval'] = max(1, int((now_ts - last_ts) / 60))
         loginf('davishealthapi packet: %s' % record)
