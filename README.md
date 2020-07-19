@@ -1,5 +1,5 @@
 # weewx-davishealthapi
-Driver/service that pulls device health (telemetry) information from a Davis Instruments weather sensor and displays it using weewx. I made this extension for users like me who have a WeatherLink Live device, which unfortunately provides no sensor health data over the local API. 
+Weewx service that pulls device health (telemetry) information from a Davis Instruments weather sensor. I made this extension for users like me who have a WeatherLink Live device, which unfortunately provides no sensor health data over the local API. 
 
 The code makes two API calls per archive period: one to the "current" v2 API, which contains values like the console battery status and firmware version, and another to the "historical" v2 API, which contains most of the sensor's health telemetry like signal strength, signal quality, solar cell voltage, and so on.
 
@@ -49,7 +49,7 @@ Install the extension:
 Alternatively, you could `git clone` the repository and point `wee_extension` towards the resulting folder.
 
 ## Configuration
-By default, the installer installs `davishealthapi` as a service, allowing your station to keep collecting weather information via its usual driver. It runs during every archive interval and inserts data into its own SQL database. Alternatively, you could install it as a driver, in which case it runs as often as you specify in `weewx.conf`. Instructions are listed in the `davishealthapi.py` file.
+By default, the installer installs `davishealthapi` as a service, allowing your station to keep collecting weather information via its usual driver. It runs during every archive interval and inserts data into its own SQL database.
 
 ### API keys
 Once installed, you need to add your Davis WeatherLink Cloud API key, station ID, and secret. To obtain an API key and secret, go to your WeatherLink Cloud account page and look for a button marked "Generate v2 Token." Once you complete the process, enter your key and secret where indicated in weewx.conf.
@@ -111,7 +111,6 @@ If you're using the excellent [Belchertown skin](https://github.com/poblabs/weew
 [[voltChart]]
         title = Voltages
         type = spline
-        connectNulls = True
         data_binding = davishealthapi_binding
         [[[supercapVolt]]]
         [[[solarVolt]]]
