@@ -1,2 +1,5 @@
 __pycache__
 .DS_store
+.vim
+.vscode
+.pylintrc
