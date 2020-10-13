@@ -19,8 +19,8 @@ class DavisHealthAPIInstaller(ExtensionInstaller):
                 'davishealthapi': {
                     'data_binding': 'davishealthapi_binding',
                     'station_id': '',
-                    'api-key': '',
-                    'api-secret': ''
+                    'api_key': '',
+                    'api_secret': ''
                 },
                 'DataBindings': {
                     'davishealthapi_binding': {

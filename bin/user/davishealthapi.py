@@ -156,9 +156,7 @@ def get_historical_url(parameters, api_secret):
     ).hexdigest()
     # Finally assemble the URL
     apiurl = (
-        "https://api.weatherlink.com/v2/historic/%s?api-key=%s"
-        "&start-timestamp=%s&end-timestamp=%s&api-signature=%s"
-        "&t=%s"
+        "https://api.weatherlink.com/v2/historic/%s?api-key=%s&start-timestamp=%s&end-timestamp=%s&api-signature=%s&t=%s"
         % (
             parameters["station-id"],
             parameters["api-key"],
@@ -184,8 +182,7 @@ def get_current_url(parameters, api_secret):
         api_secret.encode("utf-8"), urltext.encode("utf-8"), hashlib.sha256
     ).hexdigest()
     apiurl = (
-        "https://api.weatherlink.com/v2/current/%s?api-key=%s"
-        "&api-signature=%s&t=%s"
+        "https://api.weatherlink.com/v2/current/%s?api-key=%s&api-signature=%s&t=%s"
         % (
             parameters["station-id"],
             parameters["api-key"],
