@@ -242,11 +242,13 @@ def decode_historical_json(data):
             "No valid historical  API data recieved. Double-check API "
             "key/secret and station id. Error is: %s" % error
         )
+        logerr("The API data returned was: %s" % data)
     except IndexError as error:
         logerr(
             "No valid historical data structure types found in API data. "
             "Error is: %s" % error
         )
+        logerr("The API data returned was: %s" % data)
     return h_packet
 
 
@@ -282,11 +284,13 @@ def decode_current_json(data):
             "No valid current API data recieved. Double-check API "
             "key/secret and station id. Error is: %s" % error
         )
+        logerr("The API data returned was: %s" % data)
     except IndexError as error:
         logerr(
             "No valid current data structure types found in API data. "
             "Error is: %s" % error
         )
+        logerr("The API data returned was: %s" % data)
     return c_packet
 
 
