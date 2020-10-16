@@ -5,6 +5,8 @@ The code makes two API calls per archive period: one to the "current" v2 API, wh
 
 The data are stored in their own database, since most of the fields don't exist within the default weewx database. The code is patterned after the [cmon driver for weewx by Matthew Hall](https://github.com/uajqq/weewx-weatherlinkliveudp).
 
+Please note: most of the data is pulled from the "Historic Data" API, which requires a paid monthly subscription from Davis to use (starting at about $4/month). See here: https://weatherlink.github.io/v2-api/data-permissions
+
 ## Data
 Right now, the service records the following information from the Davis WeatherLink API:
 
