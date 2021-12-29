@@ -57,11 +57,11 @@ By default, the installer installs `davishealthapi` as a service, allowing your 
 Once installed, you need to add your Davis WeatherLink Cloud API key, station ID, and secret. To obtain an API key and secret, go to your WeatherLink Cloud account page and look for a button marked "Generate v2 Token." Once you complete the process, enter your key and secret where indicated in weewx.conf.
 
 ### Station ID
-Davis doesn't make it easy to make API calls, and you have to make an API call to get your station ID. To help the process along, I adapted one of Davis' example Python scripts to make an API call that shows your station ID. To use it, look for the file `davis_api_tool.py` in the zip file you downloaded. Open it in a text editor and type in your API key/secret where indicated. Save the file and run it like so:
+Davis doesn't make it easy to make API calls, and you have to make an API call to get your station ID. To help the process along, I adapted one of Davis' example Python scripts to make an API call that shows your station ID. To use it, look for the file `davis_api_tool.py` in the zip file you downloaded. Save the file and run it like so:
 
 `python3 davis_api_tool.py`
 
-It should return a URL. Open that in a browser (don't delay, the timestamp is encoded in that URL and the Davis API will reject the call if you wait too long to make the call) and you'll get back a string of text. Your station ID will be near the beginning. Enter that number into weewx.conf and you should be good to go.
+It will ask for your API key and secret, and then it should return a URL. Open that in a browser (don't delay, the timestamp is encoded in that URL and the Davis API will reject the call if you wait too long to make the call) and you'll get back a string of text. Your station ID will be near the beginning. Enter that number into weewx.conf and you should be good to go.
 
 ## Usage
 

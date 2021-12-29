@@ -13,9 +13,9 @@ API endpoint
 Here is the list of parameters we will use for this example.
 """
 parameters = {
-  "api-key": "xxxxxxxxx" #REPLACE THIS WITH YOUR API KEY
-  "api-secret": "zzzzzzzz", #REPLACE THIS WITH YOUR API SECRET
-  "t": int(time.time())
+    "api-key": input("Input API key: "),
+    "api-secret": input("Input API secret: "),
+    "t": int(time.time()),
 }
 
 """
@@ -40,13 +40,13 @@ Let's take a moment to print out all parameters for debugging
 and educational purposes.
 """
 for key in parameters:
-  print("Parameter name: \"{}\" has value \"{}\"".format(key, parameters[key]))
+    print('Parameter name: "{}" has value "{}"'.format(key, parameters[key]))
 
 """
 Save and remove the API Secret from the set of parameters.
 """
-apiSecret = parameters["api-secret"];
-parameters.pop("api-secret", None);
+apiSecret = parameters["api-secret"]
+parameters.pop("api-secret", None)
 
 """
 Iterate over the remaining sorted parameters and concatenate
@@ -54,29 +54,31 @@ the parameter names and values into a single string.
 """
 data = ""
 for key in parameters:
-  data = data + key + str(parameters[key])
+    data = data + key + str(parameters[key])
 
 """
 Let's print out the data we are going to hash.
 """
-print("Data string to hash is: \"{}\"".format(data))
+print('Data string to hash is: "{}"'.format(data))
 
 """
 Calculate the HMAC SHA-256 hash that will be used as the API Signature.
 """
 apiSignature = hmac.new(
-  apiSecret.encode('utf-8'),
-  data.encode('utf-8'),
-  hashlib.sha256
+    apiSecret.encode("utf-8"), data.encode("utf-8"), hashlib.sha256
 ).hexdigest()
 
 """
 Let's see what the final API Signature looks like.
 """
-print("API Signature is: \"{}\"".format(apiSignature))
+print('API Signature is: "{}"'.format(apiSignature))
 
 """
 Now that the API Signature is calculated let's see what the final
 v2 API URL would look like for this scenario.
 """
-print("v2 API URL: https://api.weatherlink.com/v2/stations?api-key={}&api-signature={}&t={}".format(parameters["api-key"], apiSignature, parameters["t"]))
+print(
+    "v2 API URL: https://api.weatherlink.com/v2/stations?api-key={}&api-signature={}&t={}".format(
+        parameters["api-key"], apiSignature, parameters["t"]
+    )
+)
