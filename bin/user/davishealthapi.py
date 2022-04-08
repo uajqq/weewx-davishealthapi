@@ -256,7 +256,7 @@ def decode_historical_json(jdata):
     return h_packet
 
 
-def decode_current_json(data):
+def decode_current_json(jdata):
     """Read the current API JSON data"""
 
     c_packet = dict()
