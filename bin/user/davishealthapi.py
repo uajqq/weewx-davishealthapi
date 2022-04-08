@@ -206,92 +206,106 @@ def get_json(url):
     return response.json()
 
 
-def decode_historical_json(data):
+def decode_historical_json(jdata):
     """Read the historical API JSON data"""
 
     h_packet = dict()
     try:
-        historical_data = data["sensors"]
-        for i in range(7):
-            if historical_data[i]["data"] and (
-                historical_data[i]["data_structure_type"] == 11
-                or historical_data[i]["data_structure_type"] == 13
-            ):
-                logdbg("Found historical data from data ID %s" % i)
-                values = historical_data[i]["data"][0]
+        # Iterate through the Historical Data sensor data response from Davis to get Health Metrics
+        for sensor_results in iter(jdata["sensors"]):
+            logdbg("Sensor Type: {}".format(sensor_results["sensor_type"]))
+            logdbg("Data Structure Type : {}".format(sensor_results["data_structure_type"]))
 
-                h_packet["rxCheckPercent"] = values.get("reception")
-                h_packet["rssi"] = values.get("rssi")
-                h_packet["supercapVolt"] = values.get("supercap_volt_last")
-                h_packet["solarVolt"] = values.get("solar_volt_last")
-                h_packet["packetStreak"] = values.get("good_packets_streak")
-                h_packet["txID"] = values.get("tx_id")
-                h_packet["txBattery"] = values.get("trans_battery")
-                h_packet["rainfallClicks"] = values.get("rainfall_clicks")
-                h_packet["solarRadVolt"] = values.get("solar_rad_volt_last")
-                h_packet["txBatteryFlag"] = values.get("trans_battery_flag")
-                h_packet["signalQuality"] = values.get("reception")
-                h_packet["errorPackets"] = values.get("error_packets")
-                h_packet["afc"] = values.get("afc")
-                h_packet["resynchs"] = values.get("resynchs")
-                h_packet["uvVolt"] = values.get("uv_volt_last")
+            #Check to see if the Data Structure coincides with the WeatherLink or ISS Health Check
+            if sensor_results["data"] and sensor_results["data_structure_type"] in (11, 13, 15):
+                logdbg("Found historical data from response.")
+                data_values = sensor_results["data"][0]
+                
+                #Post the data to the dictionary
+                h_packet["rxCheckPercent"] = data_values.get("reception")
+                h_packet["rssi"] = data_values.get("rssi")
+                h_packet["supercapVolt"] = data_values.get("supercap_volt_last")
+                h_packet["solarVolt"] = data_values.get("solar_volt_last")
+                h_packet["packetStreak"] = data_values.get("good_packets_streak")
+                h_packet["txID"] = data_values.get("tx_id")
+                h_packet["txBattery"] = data_values.get("trans_battery")
+                h_packet["rainfallClicks"] = data_values.get("rainfall_clicks")
+                h_packet["solarRadVolt"] = data_values.get("solar_rad_volt_last")
+                h_packet["txBatteryFlag"] = data_values.get("trans_battery_flag")
+                h_packet["signalQuality"] = data_values.get("reception")
+                h_packet["errorPackets"] = data_values.get("error_packets")
+                h_packet["afc"] = data_values.get("afc")
+                h_packet["resynchs"] = data_values.get("resynchs")
+                h_packet["uvVolt"] = data_values.get("uv_volt_last")
+            else:
+                logdbg("Data not associated with Health Data. Data was : {}".format(sensor_results["data"][0]))                
 
-                break
     except KeyError as error:
         logerr(
             "No valid historical  API data recieved. Double-check API "
             "key/secret and station id. Error is: %s" % error
         )
-        logerr("The API data returned was: %s" % data)
+        logerr("The API data returned was: %s" % jdata)
     except IndexError as error:
         logerr(
             "No valid historical data structure types found in API data. "
             "Error is: %s" % error
         )
-        logerr("The API data returned was: %s" % data)
+        logerr("The API data returned was: %s" % jdata)
+    
     return h_packet
 
 
-def decode_current_json(data):
+def decode_current_json(jdata):
     """Read the current API JSON data"""
 
     c_packet = dict()
+
     try:
-        current_data = data["sensors"]
-        for i in range(7):
-            if current_data[i]["data"] and current_data[i]["data_structure_type"] == 15:
-                logdbg("Found current data from data ID %s" % i)
-                values = current_data[i]["data"][0]
+        # Iterate through the current Data sensor data response from Davis to get Health Metrics
+        for sensor_results in iter(jdata["sensors"]):
+            logdbg("Sensor Type: {}".format(sensor_results["sensor_type"]))
+            logdbg("Data Structure Type : {}".format(sensor_results["data_structure_type"]))
 
-                c_packet["consoleBattery"] = values.get("battery_voltage")
-                c_packet["rapidRecords"] = values.get("rapid_records_sent")
-                c_packet["firmwareVersion"] = values.get("firmware_version")
-                c_packet["uptime"] = values.get("uptime")
-                c_packet["touchpadWakeups"] = values.get("touchpad_wakeups")
-                c_packet["bootloaderVersion"] = values.get("bootloader_version")
-                c_packet["localAPIQueries"] = values.get("local_api_queries")
-                c_packet["rxBytes"] = values.get("rx_bytes")
-                c_packet["healthVersion"] = values.get("health_version")
-                c_packet["radioVersion"] = values.get("radio_version")
-                c_packet["espressIFVersion"] = values.get("espressif_version")
-                c_packet["linkUptime"] = values.get("link_uptime")
-                c_packet["consolePower"] = values.get("input_voltage")
-                c_packet["txBytes"] = values.get("tx_bytes")
+            #We are only concerned with WeatherLinkLive Health data at this time. 
+            if sensor_results["data"] and sensor_results["data_structure_type"] == 15:
+                logdbg("Found current data from response.")
+                data_values = sensor_results["data"][0]
 
-                break
+                #Populate Dictionary with known values
+                c_packet["rssi"] = data_values.get("wifi_rssi")
+                c_packet["consoleBattery"] = data_values.get("battery_voltage")
+                c_packet["rapidRecords"] = data_values.get("rapid_records_sent")
+                c_packet["firmwareVersion"] = data_values.get("firmware_version")
+                c_packet["uptime"] = data_values.get("uptime")
+                c_packet["touchpadWakeups"] = data_values.get("touchpad_wakeups")
+                c_packet["bootloaderVersion"] = data_values.get("bootloader_version")
+                c_packet["localAPIQueries"] = data_values.get("local_api_queries")
+                c_packet["rxBytes"] = data_values.get("rx_bytes")
+                c_packet["healthVersion"] = data_values.get("health_version")
+                c_packet["radioVersion"] = data_values.get("radio_version")
+                c_packet["espressIFVersion"] = data_values.get("espressif_version")
+                c_packet["linkUptime"] = data_values.get("link_uptime")
+                c_packet["consolePower"] = data_values.get("input_voltage")
+                c_packet["txBytes"] = data_values.get("tx_bytes")
+            else:
+                logdbg("Data not associated with Health Data. Data was : {}".format(sensor_results["data"][0]))          
+
+
     except KeyError as error:
         logerr(
             "No valid current API data recieved. Double-check API "
             "key/secret and station id. Error is: %s" % error
         )
-        logerr("The API data returned was: %s" % data)
+        logerr("The API data returned was: %s" % jdata)
     except IndexError as error:
         logerr(
             "No valid current data structure types found in API data. "
             "Error is: %s" % error
         )
-        logerr("The API data returned was: %s" % data)
-    return c_packet
+        logerr("The API data returned was: %s" % jdata)
+    
+    return c_packet 
 
 
 class DavisHealthAPI(StdService):
@@ -396,11 +410,14 @@ class DavisHealthAPI(StdService):
 
     def prune_data(self, timestamp):
         """delete records with dateTime older than ts"""
-        sql = "delete from %s where dateTime < %d" % (self.dbm.table_name, timestamp)
-        self.dbm.getSql(sql)
         try:
+            sql = "delete from %s where dateTime < %d" % (self.dbm.table_name, timestamp)
+            self.dbm.getSql(sql)
+        
             # sqlite databases need some help to stay small
-            self.dbm.getSql("vacuum")
+            # Commenting out as this throws SQL errors with MySQL. Also not sure if this is necessary with the newer SQLite libraries
+            
+            #self.dbm.getSql("vacuum")
         except Exception as error:
             logerr("Prune data error: %s" % error)
 
